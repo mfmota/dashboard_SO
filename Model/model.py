@@ -7,7 +7,6 @@ class SystemInfo:
         self.memory_usage = 0.0
         self.prev_total_time = 0
         self.prev_idle_time = 0
-        
 
     def get_cpu_usage(self):
         try:
@@ -40,7 +39,7 @@ class SystemInfo:
             mem_total = int(lines[0].split()[1])
             mem_free = int(lines[1].split()[1])
             mem_available = int(lines[2].split()[1])
-            mem_virtual = int(lines[14].split()[1])  # Virtual memory (SwapTotal)
+            mem_virtual = int(lines[14].split()[1])  
             mem_virtual_free = int(lines[15].split()[1]) 
 
             self.memory_usage = 100 * (1 - mem_free / mem_total)

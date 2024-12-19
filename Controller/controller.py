@@ -1,6 +1,5 @@
 import threading
 import time
-import os
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
 
@@ -49,7 +48,6 @@ class DashboardController:
 
         threads_info = process_info.get_thread_info()
         memory_info = process_info.get_memory_details(pid)
-        print(memory_info)
        
         details = {
             "PID": pid,

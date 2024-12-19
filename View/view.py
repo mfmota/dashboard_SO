@@ -10,25 +10,19 @@ class DashboardView:
         self.root.title("Painel do Sistema")
         self.root.geometry("1200x800")
         
-        # Frame principal para os labels e gráficos
         self.system_frame = tk.Frame(self.root)
         self.system_frame.pack(pady=10)
 
-        # Linha 1: Labels (formatados como no dashboard)
         self.create_summary_labels()
 
-        # Linha 2: Gráficos e tabela
         self.row2_frame = tk.Frame(self.root)
         self.row2_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Gráfico de CPU (esquerda)
         self.create_cpu_graph()
 
-        # Tabela de processos (direita)
         self.create_process_table()
 
     def create_summary_labels(self):
-        """Cria labels no estilo dos indicadores principais, organizados em 2 linhas."""
         self.labels_frame = tk.Frame(self.system_frame)
         self.labels_frame.pack()
 
@@ -46,54 +40,44 @@ class DashboardView:
 
         self.summary_labels = []
 
-        # Organizar em 2 linhas: 4 elementos na primeira e 5 na segunda
         for index, (text, value) in enumerate(label_texts):
-            row = index // 4  # Primeira linha (0) para os primeiros 4 itens, segunda linha (1) para os próximos
-            col = index % 4  # Coluna baseada no índice (0 a 3 para cada linha)
+            row = index // 4  
+            col = index % 4  
 
-            # Frame para cada label
             frame = tk.Frame(self.labels_frame, borderwidth=2, relief="groove", bg="#f4f4f4")
-            frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")  # Usando grid para posicionar
+            frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew") 
 
-            # Título do label
             tk.Label(frame, text=text, font=("Arial", 12), fg="gray", bg="#f4f4f4").pack()
-            # Valor do label
+          
             label = tk.Label(frame, text=value, font=("Arial", 18, "bold"), fg="black", bg="#f4f4f4")
             label.pack()
             
             self.summary_labels.append(label)
 
-        # Ajustando os atributos para facilitar o acesso
         (self.cpu_label, self.memory_label, self.memory_free_label, self.memory_physical_label,
         self.memory_virtual_label, self.memory_virtual_free_label, self.idle_time_label,
         self.total_processes_label, self.total_threads_label) = self.summary_labels
 
 
     def create_cpu_graph(self):
-        """Cria um gráfico de pizza mostrando o uso da CPU."""
         self.cpu_frame = tk.Frame(self.row2_frame, borderwidth=2, relief="groove")
         self.cpu_frame.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-        # Gráfico inicial
         self.fig, self.ax = plt.subplots()
         self.cpu_pie = self.ax.pie([50, 50], labels=["Uso", "Livre"], autopct="%1.1f%%", startangle=90, colors=["#ff9999", "#66b3ff"])
-        self.ax.axis("equal")  # Garante formato circular
+        self.ax.axis("equal") 
 
         self.canvas = FigureCanvasTkAgg(self.fig, self.cpu_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # Título acima do gráfico
         tk.Label(self.cpu_frame, text="Gráfico de Uso de CPU", font=("Arial", 14, "bold")).pack()
 
     def create_process_table(self):
-        """Cria a tabela de processos."""
         self.process_frame = tk.Frame(self.row2_frame, borderwidth=2, relief="groove")
         self.process_frame.pack(side=tk.RIGHT, padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-        # Título acima da tabela
         tk.Label(self.process_frame, text="Tabela de Processos", font=("Arial", 14, "bold")).pack()
 
-        # Tabela
         self.process_table = ttk.Treeview(self.process_frame, columns=("PID", "Nome", "Usuário", "Memória", "Threads"), show="headings")
         self.process_table.heading("PID", text="PID")
         self.process_table.column("PID", anchor=tk.CENTER, width=50)
@@ -110,18 +94,17 @@ class DashboardView:
         self.process_table.bind("<Double-1>", self.on_process_double_click)
 
     def update_system_info(self, cpu_usage, idle_percentage, memory_info, total_processes, total_threads):
-        """Atualiza os dados nos labels."""
-        self.summary_labels[0].config(text=f"{cpu_usage}%")  # Uso de CPU
-        self.summary_labels[1].config(text=f"{memory_info['memory_usage_percent']}%")  # Uso de Memória
-        self.summary_labels[2].config(text=f"{round((memory_info['free_memory'] / memory_info['total_memory']) * 100, 2)}%")  # Memória Livre
-        self.summary_labels[3].config(text=f"{memory_info['total_memory'] // 1024} MB")  # Memória Física
-        self.summary_labels[4].config(text=f"{memory_info['virtual_memory'] // 1024} MB")  # Memória Virtual
-        self.summary_labels[5].config(text=f"{memory_info['virtual_memory_free'] // 1024} MB")  # Memória Virtual Livre
-        self.summary_labels[6].config(text=f"{idle_percentage}%")  # Tempo Ocioso
-        self.summary_labels[7].config(text=f"{total_processes}")  # Total de Processos
-        self.summary_labels[8].config(text=f"{total_threads}")  # Total de Threads
 
-        # Atualiza gráfico de CPU
+        self.summary_labels[0].config(text=f"{cpu_usage}%") 
+        self.summary_labels[1].config(text=f"{memory_info['memory_usage_percent']}%")  
+        self.summary_labels[2].config(text=f"{round((memory_info['free_memory'] / memory_info['total_memory']) * 100, 2)}%")  
+        self.summary_labels[3].config(text=f"{memory_info['total_memory'] // 1024} MB")  
+        self.summary_labels[4].config(text=f"{memory_info['virtual_memory'] // 1024} MB")  
+        self.summary_labels[5].config(text=f"{memory_info['virtual_memory_free'] // 1024} MB") 
+        self.summary_labels[6].config(text=f"{idle_percentage}%") 
+        self.summary_labels[7].config(text=f"{total_processes}")  
+        self.summary_labels[8].config(text=f"{total_threads}")  
+
         self.ax.clear()
         self.cpu_pie = self.ax.pie(
             [cpu_usage, 100 - cpu_usage],
@@ -135,7 +118,6 @@ class DashboardView:
 
 
     def update_process_list(self, processes):
-        """Atualiza a tabela de processos."""
         for row in self.process_table.get_children():
             self.process_table.delete(row)
         for process in processes:
@@ -166,8 +148,28 @@ class ProcessDetailView:
         if details:
             for key, value in details.items():
                 if key != "Threads" and key != "Memory Details": 
-                    label = tk.Label(self.details_frame, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
-                    label.pack(fill=tk.X, padx=5, pady=2)
+                    if key == "Estado":
+                        if value ==  "R":
+                            label = tk.Label(self.details_frame, text=f"{key}: Ativo", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)
+                        elif value == "S":
+                            label = tk.Label(self.details_frame, text=f"{key}: Inativo", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)
+                        elif value == "D":
+                            label = tk.Label(self.details_frame, text=f"{key}: Aguardando E/S", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)
+                        elif value == "Z":
+                            label = tk.Label(self.details_frame, text=f"{key}: Zombie", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)    
+                        elif value == "T":
+                            label = tk.Label(self.details_frame, text=f"{key}: Parado", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)
+                        elif value == "X":
+                            label = tk.Label(self.details_frame, text=f"{key}: Terminou", font=("Arial", 12), anchor="w")
+                            label.pack(fill=tk.X, padx=5, pady=2)
+                    else:
+                        label = tk.Label(self.details_frame, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
+                        label.pack(fill=tk.X, padx=5, pady=2)
 
             if "Memory Details" in details:
                 mem_details_label = tk.Label(self.details_frame, text="Detalhes de Memória:", font=("Arial", 14, "bold"))
@@ -199,9 +201,27 @@ class ProcessDetailView:
 
             scrollbar.config(command=self.threads_table.yview)
 
-            if "Threads" in details and isinstance(details["Threads"], list):
+            if "Threads" in details and isinstance(details["Threads"], list): 
                 for thread in details["Threads"]:
-                    self.threads_table.insert("", "end", values=(thread["tid"], thread["state"], thread["cpu_time"]))
+                    thread_state = thread["state"]
+                    
+                    if thread_state == "R":
+                        state_description = "Ativo"
+                    elif thread_state == "S":
+                        state_description = "Inativo"
+                    elif thread_state == "D":
+                        state_description = "Aguardando E/S"
+                    elif thread_state == "Z":
+                        state_description = "Zombie"
+                    elif thread_state == "T":
+                        state_description = "Parado"
+                    elif thread_state == "X":
+                        state_description = "Terminou"
+                    else:
+                        state_description = "Desconhecido"
+                    
+                    self.threads_table.insert("", "end", values=(thread["tid"], state_description, thread["cpu_time"]))
+
             else:
                 self.threads_table.insert("", "end", values=("N/A", "N/A", "N/A"))
         else:

@@ -1,5 +1,5 @@
-import os
-import pwd
+import os #interação com o sistemas de arquivo
+import pwd # mapear UIDs com nomes de usuários
 
 class SystemInfo:
     def __init__(self):
@@ -7,16 +7,17 @@ class SystemInfo:
         self.memory_usage = 0.0
         self.prev_total_time = 0
         self.prev_idle_time = 0
-
+    # uso da CPU
     def get_cpu_usage(self):
         try:
+            # lê as informações de cpu do arquivo /proc/stat
             with open("/proc/stat", "r") as f:
                 lines = f.readlines()
             cpu_line = lines[0].split()
             total_time = sum(int(x) for x in cpu_line[1:])
             idle_time = int(cpu_line[4])
             total_diff = 0
-
+            # Calcula a diferença desde a última leitura
             if self.prev_total_time:
                 total_diff = total_time - self.prev_total_time
                 idle_diff = idle_time - self.prev_idle_time
@@ -24,7 +25,7 @@ class SystemInfo:
 
             self.prev_total_time = total_time
             self.prev_idle_time = idle_time
-
+             # Calcula a porcentagem ociosa como referência
             idle_percentage = (idle_diff / total_diff) * 100 if total_diff > 0 else 0
 
             return round(self.cpu_usage, 2), round(idle_percentage, 2)
@@ -32,8 +33,10 @@ class SystemInfo:
             print(f"Error getting CPU usage: {e}")
             return 0.0
 
+    #informações detalhadas da memória
     def get_memory_info(self):
         try:
+             # Lê informações de memória do arquivo /proc/meminfo
             with open("/proc/meminfo", "r") as f:
                 lines = f.readlines()
             mem_total = int(lines[0].split()[1])
@@ -65,18 +68,20 @@ class SystemInfo:
                 "memory_free_percent": 0
             }
 
+    # Obtém o número total de processos e threads no sistema
     def get_total_processes_and_threads(self):
         try:
             process_count = 0
             thread_count = 0
 
+            # Percorre todos os PIDs no diretório /proc
             for pid in os.listdir("/proc"):
-                if pid.isdigit():
+                if pid.isdigit():  # Verifica se o nome do diretório é um PID válido
                     process_count += 1
                     with open(f"/proc/{pid}/status", "r") as f:
                         lines = f.readlines()
                     for line in lines:
-                        if line.startswith("Threads:"):
+                        if line.startswith("Threads:"): # Encontra a contagem de threads para o processo
                             thread_count += int(line.split()[1])
                             break
 
@@ -84,7 +89,7 @@ class SystemInfo:
         except Exception as e:
             print(f"Error counting processes and threads: {e}")
             return 0, 0
-        
+#informações específicas sobre um projeto 
 class ProcessInfo:
     def __init__(self, pid):
         self.pid = pid
@@ -96,6 +101,7 @@ class ProcessInfo:
         self.threads = []
         self.command = None
 
+    # Obtém o nome do usuário que executa o processo
     def get_process_user(self):
         try:
             with open(f"/proc/{self.pid}/loginuid", "r") as f:
@@ -104,6 +110,7 @@ class ProcessInfo:
         except Exception:
             return "Unknown"
 
+    # detalhes sobre o processo
     def get_process_details(self):
         try:
             with open(f"/proc/{self.pid}/status", "r") as f:
@@ -126,6 +133,7 @@ class ProcessInfo:
         except FileNotFoundError:
             pass
     
+     # detalhes específicos de memória do processo
     def get_memory_details(self,pid):
         
         try:
@@ -144,13 +152,13 @@ class ProcessInfo:
                     elif line.startswith("VmData:"):  
                         memory_details["Memória Heap (KB)"] += int(line.split()[1])
                     elif line.startswith("VmStack:"):
-                        memory_details["Memóra de Pilha (KB)"] += int(line.split()[1])
+                        memory_details["Memória de Pilha (KB)"] += int(line.split()[1])
             return memory_details
             
         except Exception as e:
             print(f"Error getting memory details for PID {self.pid}: {e}")
         
-
+    #informações sobre as threads do processo
     def get_thread_info(self):
         thread_info = []
         try:
@@ -170,17 +178,19 @@ class ProcessInfo:
             print(f"Error getting thread info for PID {self.pid}: {e}")
         return thread_info
 
+    # calcular o tempo de CPU de uma thread
     @staticmethod
     def get_cpu_time(tid):
         try:
             with open(f"/proc/{tid}/stat", "r") as f:
                 stats = f.read().split()
-                utime = int(stats[13])
-                stime = int(stats[14])
+                utime = int(stats[13])  # Tempo de CPU em modo usuário
+                stime = int(stats[14])  # Tempo de CPU em modo kernel
                 return utime + stime
         except Exception:
             return 0
 
+    # Calcula o tempo de execução do processo desde o início
     def get_uptime(self):
         try:
             with open("/proc/uptime", "r") as f:
@@ -207,10 +217,11 @@ class ProcessInfo:
             "uptime": self.get_uptime()
         }
 
+# Lista todos os processos disponíveis no sistema
 def list_all_processes():
     processes = []
     for pid in os.listdir("/proc"):
-        if pid.isdigit():
+        if pid.isdigit(): # Filtra apenas diretórios que são números (PIDs)
             process = ProcessInfo(pid)
             process.get_process_details()
             thread_info = process.get_thread_info()

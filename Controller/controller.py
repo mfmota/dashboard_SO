@@ -3,31 +3,40 @@ import time
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
 
+
 class DashboardController:
     def __init__(self):
-        self.system_info = SystemInfo()
-        self.view = DashboardView(self)
-        self.running = False
+        self.system_info = SystemInfo()  # Inicializa a classe para obter informações do sistema.
+        self.view = DashboardView(self)  # Cria a interface do dashboard associada ao controlador.
+        self.running = False  # Indica se o loop de atualização está ativo.
+
 
     def start(self):
-        self.running = True
-        self.update_thread = threading.Thread(target=self.update_data, daemon=True)
-        self.update_thread.start()
-        self.view.run()
+        self.running = True  
+        self.update_thread = threading.Thread(target=self.update_data, daemon=True)  # Thread para atualização periodica dos dados
+        self.update_thread.start()  
+        self.view.run()  
+
 
     def stop(self):
-        self.running = False
-        self.view.stop()
+        self.running = False  
+        self.view.stop()  
+
 
     def update_data(self):
-        while self.running:
-       
+        while self.running:  
+            # Obtém as informações de uso da CPU e porcentagem de tempo ocioso.
             cpu_usage, idle_percentage = self.system_info.get_cpu_usage()
-            
+           
+            # Obtém informações sobre a memória do sistema.
             memory_info = self.system_info.get_memory_info()
 
+
+            # Obtém o número total de processos e threads no sistema.
             total_processes, total_threads = self.system_info.get_total_processes_and_threads()
 
+
+            # Atualiza a interface com as informações do sistema.
             self.view.update_system_info(
             cpu_usage=cpu_usage,
             idle_percentage=idle_percentage,
@@ -36,17 +45,26 @@ class DashboardController:
             total_threads=total_threads
         )
 
-            processes = list_all_processes()
 
+            # Lista todos os processos ativos e atualiza a interface com a lista de processos.
+            processes = list_all_processes()
             self.view.update_process_list(processes)
 
-            time.sleep(5)
+
+            time.sleep(5)  # Aguarda 5 segundos antes de atualizar novamente.
+
 
     def show_process_details(self, pid):
+        # Cria uma instância da classe para obter detalhes do processo específico.
         process_info = ProcessInfo(pid)
         process_info.get_process_details()
 
+
+        # Obtém as informações das threads associadas ao processo.
         threads_info = process_info.get_thread_info()
+
+
+        # Obtém detalhes de memória do processo.
         memory_info = process_info.get_memory_details(pid)
        
         details = {

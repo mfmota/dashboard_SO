@@ -13,9 +13,10 @@ class DashboardController:
 
     def start(self):
         self.running = True  
-        self.update_thread = threading.Thread(target=self.update_data, daemon=True)  # Thread para atualização periodica dos dados
-        self.update_thread.start()  
-        self.view.run()  
+        while self.running:
+            self.update_thread = threading.Thread(target=self.update_data, daemon=True)  # Thread para atualização periodica dos dados
+            self.update_thread.start()  
+            self.view.run()  
 
 
     def stop(self):

@@ -92,6 +92,24 @@ class DashboardView:
         self.process_frame.pack(side=tk.RIGHT, padx=10, pady=10, fill=tk.BOTH, expand=True)
 
         tk.Label(self.process_frame, text="Tabela de Processos", font=("Arial", 14, "bold")).pack()
+        
+        # Campo de busca
+        search_frame = tk.Frame(self.process_frame)
+        search_frame.pack(pady=5)
+        tk.Label(search_frame, text="Buscar:", font=("Arial", 12)).pack(side=tk.LEFT)
+        search_entry = tk.Entry(search_frame)
+        search_entry.pack(side=tk.LEFT, padx=5)
+
+        def filter_table():
+            query = search_entry.get().lower()
+            for row in self.process_table.get_children():
+                values = self.process_table.item(row)["values"]
+                if any(query in str(value).lower() for value in values):
+                    self.process_table.reattach(row, "", tk.END)
+                else:
+                    self.process_table.detach(row)
+
+        search_entry.bind("<KeyRelease>", lambda event: filter_table())
 
         # Configuração da tabela usando Treeview.
         self.process_table = ttk.Treeview(self.process_frame, columns=("PID", "Nome", "Usuário", "Memória", "Threads"), show="headings")
@@ -109,6 +127,15 @@ class DashboardView:
 
         # Evento de clique duplo na tabela.
         self.process_table.bind("<Double-1>", self.on_process_double_click)
+
+    #ordena a tabela
+    def sort_table(self, column):
+        data = [(self.process_table.item(child)["values"], child) for child in self.process_table.get_children()]
+        index = ["PID", "Nome", "Usuário", "Memória", "Threads"].index(column)
+        data.sort(key=lambda x: x[0][index])
+        for index, (_, item) in enumerate(data):
+            self.process_table.move(item, "", index)
+
 
     # Atualiza os rótulos de informações do sistema.
     def update_system_info(self, cpu_usage, idle_percentage, memory_info, total_processes, total_threads):
@@ -165,86 +192,52 @@ class ProcessDetailView:
         self.window.title(f"Detalhes do Processo - PID {details['PID']}")  
         self.window.geometry("800x500")  
 
-        self.details_frame = tk.Frame(self.window)
-        self.details_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        notebook = ttk.Notebook(self.window)
+        notebook.pack(fill=tk.BOTH, expand=True)
+
+        # Aba de Detalhes Básicos
+        basic_tab = tk.Frame(notebook)
+        notebook.add(basic_tab, text="Detalhes Básicos")
 
         if details:
             for key, value in details.items():
-                if key != "Threads" and key != "Memory Details":
-                    # Tratamento para o campo Estado.
-                    if key == "Estado":
-                        state_description = {
-                            "R": "Ativo",
-                            "S": "Inativo",
-                            "D": "Aguardando E/S",
-                            "Z": "Zombie",
-                            "T": "Parado",
-                            "X": "Terminou",
-                        }.get(value, "Desconhecido")
-
-                        label = tk.Label(self.details_frame, text=f"{key}: {state_description}", font=("Arial", 12), anchor="w")
-                        label.pack(fill=tk.X, padx=5, pady=2)
-                    else:
-                        label = tk.Label(self.details_frame, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
-                        label.pack(fill=tk.X, padx=5, pady=2)
+                if key not in ("Threads", "Memory Details"):
+                    label = tk.Label(basic_tab, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
+                    label.pack(fill=tk.X, padx=5, pady=2)
 
             # Exibe detalhes de memória, caso estejam disponíveis.
             if "Memory Details" in details:
-                mem_details_label = tk.Label(self.details_frame, text="Detalhes de Memória:", font=("Arial", 14, "bold"))
-                mem_details_label.pack(anchor="w", padx=5, pady=5)
+                memory_tab = tk.Frame(notebook)
+                notebook.add(memory_tab, text="Detalhes de Memória")
 
                 if details["Memory Details"] is not None:
                     for mem_key, mem_value in details["Memory Details"].items():
-                        label = tk.Label(self.details_frame, text=f"{mem_key}: {mem_value} KB", font=("Arial", 12), anchor="w")
+                        label = tk.Label(memory_tab, text=f"{mem_key}: {mem_value} KB", font=("Arial", 12), anchor="w")
                         label.pack(fill=tk.X, padx=5, pady=2)
 
-            # Exibe a seção de threads do processo.
-            threads_label = tk.Label(self.details_frame, text="Threads:", font=("Arial", 14, "bold"))
-            threads_label.pack(anchor="w", padx=5, pady=5)
+                else:
+                    label = tk.Label(memory_tab, text="Sem informações de memória disponíveis", font=("Arial", 12), anchor="w")
+                    label.pack(fill=tk.X, padx=5, pady=2)
 
-            table_frame = tk.Frame(self.details_frame)
-            table_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            threads_tab = tk.Frame(notebook)
+            notebook.add(threads_tab, text="Threads")
 
-            scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            threads_table = ttk.Treeview(threads_tab, columns=("TID", "Estado", "Tempo de CPU"), show="headings")
+            threads_table.heading("TID", text="TID")
+            threads_table.heading("Estado", text="Estado")
+            threads_table.heading("Tempo de CPU", text="Tempo de CPU")
+            threads_table.pack(fill=tk.BOTH, expand=True)
 
-            # Configura a tabela de threads.
-            self.threads_table = ttk.Treeview(
-                table_frame,
-                columns=("TID", "Estado", "Tempo de CPU"),
-                show="headings",
-                yscrollcommand=scrollbar.set
-            )
-            self.threads_table.heading("TID", text="TID")
-            self.threads_table.column("TID", anchor=tk.CENTER, width=50)
-            self.threads_table.heading("Estado", text="Estado")
-            self.threads_table.column("Estado", anchor=tk.W, width=100)
-            self.threads_table.heading("Tempo de CPU", text="Tempo de CPU (s)")
-            self.threads_table.column("Tempo de CPU", anchor=tk.E, width=100)
-            self.threads_table.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-            scrollbar.config(command=self.threads_table.yview)
-
-            # Preenche a tabela de threads com os dados fornecidos.
-            if "Threads" in details and isinstance(details["Threads"], list):
-                for thread in details["Threads"]:
-                    # Tratamento para Estado.
-                    state_description = {
-                        "R": "Ativo",
-                        "S": "Inativo",
-                        "D": "Aguardando E/S",
-                        "Z": "Zombie",
-                        "T": "Parado",
-                        "X": "Terminou",
-                    }.get(thread["state"], "Desconhecido")
-
-                    # Adiciona a thread à tabela.
-                    self.threads_table.insert("", "end", values=(thread["tid"], state_description, thread["cpu_time"]))
-            else:
-                self.threads_table.insert("", "end", values=("N/A", "N/A", "N/A"))
-        else:
-            label = tk.Label(self.details_frame, text="Nenhum detalhe disponível para este processo.", font=("Arial", 12), anchor="center")
-            label.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            for thread in details.get("Threads", []):
+                state_description = {
+                    "R": "Ativo",
+                    "S": "Inativo",
+                    "D": "Aguardando E/S",
+                    "Z": "Zombie",
+                    "T": "Parado",
+                    "X": "Terminou",
+                }.get(thread["state"], "Desconhecido")
+                threads_table.insert("", "end", values=(thread["tid"], state_description, thread["cpu_time"]))
 
     def show(self):
         self.window.mainloop()

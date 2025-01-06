@@ -80,3 +80,34 @@ class DashboardController:
         }
        
         ProcessDetailView(self.view.root, details)
+
+    def filter_process_list(self, query):
+        all_processes = list_all_processes()
+        filtered_processes = [
+            process for process in all_processes
+            if any(query.lower() in str(value).lower() for value in process.values())
+        ]
+        self.view.update_process_list(filtered_processes)
+
+    def sort_process_list(self, column, ascending=True):
+        """Ordena os processos ativos com base em uma coluna e ordem especificada."""
+        processes = list_all_processes()
+
+        # Mapeia as colunas para os índices correspondentes.
+        column_index_map = {
+            "PID": "pid",
+            "Nome": "name",
+            "Usuário": "user",
+            "Memória": "memory",
+            "Threads": "threads",
+        }
+
+        # Ordena os processos pela coluna selecionada.
+        sorted_processes = sorted(
+            processes,
+            key=lambda p: p[column_index_map[column]],
+            reverse=not ascending
+        )
+
+        # Atualiza a tabela com os processos ordenados.
+        self.view.update_process_list(sorted_processes)

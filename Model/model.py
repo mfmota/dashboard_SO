@@ -89,6 +89,69 @@ class SystemInfo:
         except Exception as e:
             print(f"Error counting processes and threads: {e}")
             return 0, 0
+        
+    def get_filesystem_info(self):
+        try:
+            partitions = []
+            with open("/proc/mounts", "r") as f:
+                for line in f:
+                    parts = line.split()
+                    if parts[0].startswith("/dev"):  # Apenas partições reais
+                        device = parts[0]
+                        mountpoint = parts[1]
+                        fstype = parts[2]
+
+                        # Obtém estatísticas do sistema de arquivos
+                        stats = os.statvfs(mountpoint)
+                        total_size = (stats.f_blocks * stats.f_frsize) // (1024 * 1024)  # Em MB
+                        free_size = (stats.f_bfree * stats.f_frsize) // (1024 * 1024)  # Em MB
+                        used_size = total_size - free_size
+                        percent_used = round((used_size / total_size) * 100, 2) if total_size > 0 else 0
+
+                        partitions.append({
+                            "device": device,
+                            "mountpoint": mountpoint,
+                            "fstype": fstype,
+                            "total_size": total_size,
+                            "used_size": used_size,
+                            "free_size": free_size,
+                            "percent_used": percent_used,
+                        })
+            return partitions
+        except Exception as e:
+            print(f"Error getting filesystem info: {e}")
+            return []
+    def list_directory(self, path):
+        try:
+            entries = []
+            for entry in os.listdir(path):
+                entry_path = os.path.join(path, entry)
+                try:
+                    stats = os.stat(entry_path)  # Obtém informações do arquivo
+                    if os.path.isdir(entry_path):
+                        entry_type = "directory"
+                    else:
+                        entry_type = "file"
+                    entries.append({
+                        "name": entry,
+                        "type": entry_type,
+                        "size": stats.st_size,  # Tamanho em bytes
+                        "permissions": self._get_permissions(stats.st_mode),
+                        "last_modified": stats.st_mtime,
+                    })
+                except Exception as e:
+                    print(f"Error reading {entry_path}: {e}")
+            return entries
+        except Exception as e:
+            print(f"Error listing directory {path}: {e}")
+            return []
+
+    def _get_permissions(self, mode):
+        # Retorna permissões no formato -rw-r--r--, etc.
+        return stat.filemode(mode)
+   
+    
+        
 #informações específicas sobre um projeto 
 class ProcessInfo:
     def __init__(self, pid):
@@ -143,7 +206,7 @@ class ProcessInfo:
             "Memória Heap (KB)": 0,
             "Memóra de Pilha (KB)": 0
             }
-            with open(f"/proc/{self.pid}/smaps", "r") as f:
+            with open(f"/proc/{pid}/smaps", "r") as f:
                 for line in f:
                     if line.startswith("Size:"):
                         memory_details["Memória Total (KB)"] += int(line.split()[1])

@@ -1,5 +1,6 @@
 import threading
 import time
+import os
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
 
@@ -111,3 +112,47 @@ class DashboardController:
 
         # Atualiza a tabela com os processos ordenados.
         self.view.update_process_list(sorted_processes)
+    
+    def navigate_to_directory(self, directory):
+        """Atualiza a visualização com o conteúdo do diretório especificado."""
+        if os.path.isdir(directory):
+            try:
+                # Lista arquivos e diretórios no diretório atual.
+                items = os.listdir(directory)
+                file_info = []
+
+                for item in items:
+                    full_path = os.path.join(directory, item)
+                    is_directory = os.path.isdir(full_path)
+                    size = os.path.getsize(full_path) if not is_directory else "-"
+                    modification_time = time.ctime(os.path.getmtime(full_path))
+                    file_info.append({
+                        "name": item,
+                        "size": size,
+                        "type": "Pasta" if is_directory else "Arquivo",
+                        "modification": modification_time,
+                    })
+
+                # Atualiza a interface com os arquivos e diretórios listados.
+                self.view.update_filesystem_view(directory, file_info)
+
+            except PermissionError:
+                # Caso o acesso ao diretório seja negado.
+                self.view.show_error_message("Permissão negada ao acessar este diretório.")
+        else:
+            self.view.show_error_message("Caminho inválido ou não é um diretório.")
+
+    def open_file_or_directory(self,item_name):
+        """Abre um arquivo ou navega para o diretório clicado."""
+        current_path = self.view.path_entry.get()
+        full_path = os.path.join(current_path, item_name)
+        if os.path.isdir(full_path):
+            self.navigate_to_directory(full_path)
+        else:
+            # Aqui você pode implementar ações adicionais, como abrir arquivos com um programa específico.
+            self.view.show_error_message(f"Abrir arquivos ainda não está implementado para: {full_path}")
+
+    def go_up_directory(self, current_path):
+        """Navega para o diretório pai."""
+        parent_directory = os.path.dirname(current_path)
+        self.navigate_to_directory(parent_directory)

@@ -3,6 +3,7 @@ from tkinter import ttk  # widgets estilizados.
 from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  #  integrar gráficos matplotlib ao tkinter.
 import matplotlib.pyplot as plt  # criação de gráficos.
+import os
 
 class DashboardView:
     def __init__(self, controller):
@@ -154,50 +155,6 @@ class DashboardView:
         for index, (_, item) in enumerate(data):
             self.process_table.move(item, "", index)
 
-    def create_filesystem_tab(self):
-        # Barra de navegação
-        navigation_frame = tk.Frame(self.filesystem_tab)
-        navigation_frame.pack(fill=tk.X)
-
-        self.path_label = tk.Label(navigation_frame, text="Pasta Atual:", font=("Arial", 12))
-        self.path_label.pack(side=tk.LEFT, padx=5)
-
-        self.path_entry = tk.Entry(navigation_frame, font=("Arial", 12))
-        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-
-        tk.Button(navigation_frame, text="Voltar", command=lambda: self.controller.go_up_directory(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
-        tk.Button(navigation_frame, text="Ir", command=lambda: self.controller.open_path(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
-
-        # Lista de arquivos e diretórios
-        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo", "Modificação"), show="headings")
-        self.files_table.heading("Nome", text="Nome")
-        self.files_table.column("Nome", anchor=tk.W, width=300)
-        self.files_table.heading("Tamanho", text="Tamanho")
-        self.files_table.column("Tamanho", anchor=tk.E, width=100)
-        self.files_table.heading("Tipo", text="Tipo")
-        self.files_table.column("Tipo", anchor=tk.CENTER, width=100)
-        self.files_table.heading("Modificação", text="Modificação")
-        self.files_table.column("Modificação", anchor=tk.W, width=200)
-        self.files_table.pack(fill=tk.BOTH, expand=True)
-
-        self.files_table.bind("<Double-1>", self.on_file_double_click)
-
-    def update_filesystem_view(self, path, files):
-        self.path_entry.delete(0, tk.END)
-        self.path_entry.insert(0, path)
-
-        for row in self.files_table.get_children():
-            self.files_table.delete(row)
-
-        for file in files:
-            self.files_table.insert("", "end", values=(file["name"], file["size"], file["type"], file["modification"]))
-
-    def on_file_double_click(self, event):
-        selected_item = self.files_table.selection()
-        if selected_item:
-            file_name = self.files_table.item(selected_item[0], "values")[0]
-            self.controller.open_file_or_directory(file_name)
-
     # Atualiza os rótulos de informações do sistema.
     def update_system_info(self, cpu_usage, idle_percentage, memory_info, total_processes, total_threads):
         # Atualiza os valores de cada rótulo.
@@ -238,6 +195,52 @@ class DashboardView:
         if selected_item:
             pid = self.process_table.item(selected_item[0], "values")[0]
             self.controller.show_process_details(pid)
+
+
+    def create_filesystem_tab(self):
+        # Barra de navegação
+        navigation_frame = tk.Frame(self.filesystem_tab)
+        navigation_frame.pack(fill=tk.X)
+
+        self.path_label = tk.Label(navigation_frame, text="Pasta Atual:", font=("Arial", 12))
+        self.path_label.pack(side=tk.LEFT, padx=5)
+
+        self.path_entry = tk.Entry(navigation_frame, font=("Arial", 12))
+        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        tk.Button(navigation_frame, text="Voltar", command=lambda: self.controller.go_up_directory(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
+        tk.Button(navigation_frame, text="Ir", command=lambda: self.controller.open_path(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
+
+        # Lista de arquivos e diretórios
+        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo", "Modificação"), show="headings")
+        self.files_table.heading("Nome", text="Nome")
+        self.files_table.column("Nome", anchor=tk.W, width=300)
+        self.files_table.heading("Tamanho", text="Tamanho")
+        self.files_table.column("Tamanho", anchor=tk.E, width=100)
+        self.files_table.heading("Tipo", text="Tipo")
+        self.files_table.column("Tipo", anchor=tk.CENTER, width=100)
+        self.files_table.heading("Modificação", text="Modificação")
+        self.files_table.column("Modificação", anchor=tk.W, width=200)
+        self.files_table.pack(fill=tk.BOTH, expand=True)
+
+        self.files_table.bind("<Double-1>", self.on_file_double_click)
+
+    def update_filesystem_view(self, path, files):
+        self.path_entry.delete(0, tk.END)
+        self.path_entry.insert(0, path)
+
+        for row in self.files_table.get_children():
+            self.files_table.delete(row)
+
+        for file in files:
+            self.files_table.insert("", "end", values=(file["name"], file["size"], file["type"], file["modification"]))
+
+    def on_file_double_click(self, event):
+        selected_item = self.files_table.selection()
+        if not selected_item:
+            return
+        file_name = self.files_table.item(selected_item[0], "values")[0]
+        self.controller.open_file_or_directory(file_name)
 
     def run(self):
         self.root.mainloop()

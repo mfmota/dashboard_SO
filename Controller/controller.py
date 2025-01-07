@@ -11,6 +11,7 @@ class DashboardController:
         self.view = DashboardView(self)  # Cria a interface do dashboard associada ao controlador.
         self.running = False  # Indica se o loop de atualização está ativo.
 
+        self.navigate_to_directory(os.getcwd())
 
     def start(self):
         self.running = True  
@@ -114,7 +115,6 @@ class DashboardController:
         self.view.update_process_list(sorted_processes)
     
     def navigate_to_directory(self, directory):
-        """Atualiza a visualização com o conteúdo do diretório especificado."""
         if os.path.isdir(directory):
             try:
                 # Lista arquivos e diretórios no diretório atual.

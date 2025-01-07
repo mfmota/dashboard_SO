@@ -132,6 +132,24 @@ class DashboardController:
                         "type": "Pasta" if is_directory else "Arquivo",
                         "modification": modification_time,
                     })
+            
+                partitions = self.system_info.get_filesystem_info()
+                partition_info = max((p for p in partitions if directory.startswith(p["mountpoint"])),
+                    key=lambda p: len(p["mountpoint"]),default=None)
+               
+                print("Directory:", directory)
+                print("Partitions:", partitions)
+                print("Matched Partition Info:", partition_info)
+                
+                if partition_info:
+                    for item in file_info:
+                        item.update({
+                            "fstype": partition_info["fstype"],
+                            "total_size": partition_info["total_size"],
+                            "used_size": partition_info["used_size"],
+                            "free_size": partition_info["free_size"],
+                            "percent_used": partition_info["percent_used"],
+                        })
 
                 # Atualiza a interface com os arquivos e diretórios listados.
                 self.view.update_filesystem_view(directory, file_info)

@@ -212,7 +212,8 @@ class DashboardView:
         tk.Button(navigation_frame, text="Ir", command=lambda: self.controller.open_path(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
 
         # Lista de arquivos e diretórios
-        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo", "Modificação"), show="headings")
+        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo", "Modificação", "Sistema de Arquivos", "Tamanho Total", "Usado", "Livre", "% Usado"),
+        show="headings")
         self.files_table.heading("Nome", text="Nome")
         self.files_table.column("Nome", anchor=tk.W, width=300)
         self.files_table.heading("Tamanho", text="Tamanho")
@@ -221,6 +222,16 @@ class DashboardView:
         self.files_table.column("Tipo", anchor=tk.CENTER, width=100)
         self.files_table.heading("Modificação", text="Modificação")
         self.files_table.column("Modificação", anchor=tk.W, width=200)
+        self.files_table.heading("Sistema de Arquivos", text="Sistema de Arquivos")
+        self.files_table.column("Sistema de Arquivos", anchor=tk.W, width=150)
+        self.files_table.heading("Tamanho Total", text="Tamanho Total (MB)")
+        self.files_table.column("Tamanho Total", anchor=tk.E, width=150)
+        self.files_table.heading("Usado", text="Usado (MB)")
+        self.files_table.column("Usado", anchor=tk.E, width=100)
+        self.files_table.heading("Livre", text="Livre (MB)")
+        self.files_table.column("Livre", anchor=tk.E, width=100)
+        self.files_table.heading("% Usado", text="% Usado")
+        self.files_table.column("% Usado", anchor=tk.E, width=100)
         self.files_table.pack(fill=tk.BOTH, expand=True)
 
         self.files_table.bind("<Double-1>", self.on_file_double_click)
@@ -233,7 +244,17 @@ class DashboardView:
             self.files_table.delete(row)
 
         for file in files:
-            self.files_table.insert("", "end", values=(file["name"], file["size"], file["type"], file["modification"]))
+            self.files_table.insert("", "end", values=(
+                file["name"],
+                file["size"],
+                file["type"],
+                file["modification"],
+                file.get("fstype", "-"),
+                file.get("total_size", "-"),
+                file.get("used_size", "-"),
+                file.get("free_size", "-"),
+                file.get("percent_used", "-")
+            ))
 
     def on_file_double_click(self, event):
         selected_item = self.files_table.selection()

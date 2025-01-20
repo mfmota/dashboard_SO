@@ -1,6 +1,7 @@
 import threading
 import time
 import os
+import stat
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
 
@@ -115,32 +116,21 @@ class DashboardController:
         self.view.update_process_list(sorted_processes)
     
     def navigate_to_directory(self, directory):
+        print(f"Navegando para: {directory}")
         if os.path.isdir(directory):
             try:
-                # Lista arquivos e diretórios no diretório atual.
-                items = os.listdir(directory)
-                file_info = []
-
-                for item in items:
-                    full_path = os.path.join(directory, item)
-                    is_directory = os.path.isdir(full_path)
-                    size = os.path.getsize(full_path) if not is_directory else "-"
-                    modification_time = time.ctime(os.path.getmtime(full_path))
-                    file_info.append({
-                        "name": item,
-                        "size": size,
-                        "type": "Pasta" if is_directory else "Arquivo",
-                        "modification": modification_time,
-                    })
-            
-                partitions = self.system_info.get_filesystem_info()
-                partition_info = max((p for p in partitions if directory.startswith(p["mountpoint"])),
-                    key=lambda p: len(p["mountpoint"]),default=None)
-               
-                print("Directory:", directory)
-                print("Partitions:", partitions)
-                print("Matched Partition Info:", partition_info)
+                # Usa a função list_directory para obter informações detalhadas sobre os itens no diretório.
+                file_info = self.system_info.list_directory(directory)
                 
+                # Obtém informações sobre o sistema de arquivos.
+                partitions = self.system_info.get_filesystem_info()
+                partition_info = max(
+                    (p for p in partitions if directory.startswith(p["mountpoint"])),
+                    key=lambda p: len(p["mountpoint"]),
+                    default=None
+                )
+                
+                # Adiciona informações sobre o sistema de arquivos, se disponíveis.
                 if partition_info:
                     for item in file_info:
                         item.update({
@@ -159,6 +149,14 @@ class DashboardController:
                 self.view.show_error_message("Permissão negada ao acessar este diretório.")
         else:
             self.view.show_error_message("Caminho inválido ou não é um diretório.")
+
+    def open_path(self, path):
+        """Navega para o caminho especificado."""
+        if os.path.isdir(path):
+            self.navigate_to_directory(path)
+        else:
+            self.view.show_error_message("Caminho inválido ou não é um diretório.")
+
 
     def open_file_or_directory(self,item_name):
         """Abre um arquivo ou navega para o diretório clicado."""

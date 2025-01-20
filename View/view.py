@@ -212,7 +212,7 @@ class DashboardView:
         tk.Button(navigation_frame, text="Ir", command=lambda: self.controller.open_path(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
 
         # Lista de arquivos e diretórios
-        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo", "Modificação", "Sistema de Arquivos", "Tamanho Total", "Usado", "Livre", "% Usado"),
+        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo","Permissões", "Modificação", "Sistema de Arquivos", "Tamanho Total", "Usado", "Livre", "% Usado"),
         show="headings")
         self.files_table.heading("Nome", text="Nome")
         self.files_table.column("Nome", anchor=tk.W, width=300)
@@ -220,6 +220,8 @@ class DashboardView:
         self.files_table.column("Tamanho", anchor=tk.E, width=100)
         self.files_table.heading("Tipo", text="Tipo")
         self.files_table.column("Tipo", anchor=tk.CENTER, width=100)
+        self.files_table.heading("Permissões", text="Permissões")  # Nova coluna
+        self.files_table.column("Permissões", anchor=tk.CENTER, width=150)  # Configuração da largura
         self.files_table.heading("Modificação", text="Modificação")
         self.files_table.column("Modificação", anchor=tk.W, width=200)
         self.files_table.heading("Sistema de Arquivos", text="Sistema de Arquivos")
@@ -248,7 +250,8 @@ class DashboardView:
                 file["name"],
                 file["size"],
                 file["type"],
-                file["modification"],
+                file["permissions"],
+                file["last_modified"],
                 file.get("fstype", "-"),
                 file.get("total_size", "-"),
                 file.get("used_size", "-"),

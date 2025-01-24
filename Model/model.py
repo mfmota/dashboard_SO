@@ -1,7 +1,9 @@
 import os #interação com o sistemas de arquivo
 import pwd # mapear UIDs com nomes de usuários
 import stat 
+import subprocess
 from datetime import datetime
+import threading
 
 class SystemInfo:
     def __init__(self):
@@ -124,23 +126,28 @@ class SystemInfo:
         except Exception as e:
             print(f"Error getting filesystem info: {e}")
             return []
+
     def list_directory(self, path):
+        print(f"Diretorio {path}")
         try:
             entries = []
             for entry in os.listdir(path):
                 entry_path = os.path.join(path, entry)
                 try:
-                    stats = os.stat(entry_path)  # Obtém informações do arquivo
+                    stats = os.stat(entry_path)  
                     if os.path.isdir(entry_path):
                         entry_type = "directory"
-                        size = self.get_directory_size(entry_path)
+                        size = 0
+                        threading.Thread(
+                        target=self.update_directory_size, args=(entry_path, entries)
+                    ).start()
                     else:
                         entry_type = "file"
                         size = os.path.getsize(entry_path) 
                     entries.append({
                         "name": entry,
                         "type": entry_type,
-                        "size": size,  # Tamanho em bytes
+                        "size": size, 
                         "permissions": self._get_permissions(stats.st_mode),
                         "last_modified": datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
                     })
@@ -153,37 +160,26 @@ class SystemInfo:
             return []
 
     def _get_permissions(self, mode):
-        # Retorna permissões no formato -rw-r--r--, etc.
         return stat.filemode(mode)
     
-    def get_directory_size(self, directory,max_files=1000): 
-        print(f"Calculando tamanho: {directory}")
-        total_size = 0
-        seen = set()
-        file_count = 0
-        for dirpath, dirnames, filenames in os.walk(directory):
-            if dirpath in seen:
-                continue
-            seen.add(dirpath)
+    def get_directory_size(self, directory): 
+        print(f"size")
+        try:
+            output = subprocess.check_output(['du', '-sb', directory], stderr=subprocess.DEVNULL)
+            return int(output.split()[0])
+        except Exception as e:
+            print(f"Erro ao usar 'du' para {directory}: {e}")
+            return 0
             
-            # Ignorar diretórios especiais
-            if "$RECYCLE.BIN" in dirpath or "System Volume Information" in dirpath:
-                print(f"Ignorando diretório especial: {dirpath}")
-                continue
-            
-            for f in filenames:
-                fp = os.path.join(dirpath, f)
-                try:
-                    total_size += os.path.getsize(fp)
-                    file_count += 1
-                    if file_count >= max_files:
-                        print(f"Limite de {max_files} arquivos alcançado.")
-                        return total_size
-                except OSError as e:
-                    print(f"Erro ao obter tamanho de {fp}: {e}")
-        return total_size
+    def update_directory_size(self, directory, entries):
+        """Atualiza o tamanho do diretório em segundo plano."""
+        size = self.get_directory_size(directory)
+        for entry in entries:
+            if entry["name"] == os.path.basename(directory):
+                entry["size"] = size
+                print(f"Tamanho atualizado para {directory}: {size}")
+                break
 
-        
 #informações específicas sobre um projeto 
 class ProcessInfo:
     def __init__(self, pid):

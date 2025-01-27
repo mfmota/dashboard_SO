@@ -18,14 +18,14 @@ class DashboardView:
         self.system_tab = tk.Frame(self.notebook)
         self.notebook.add(self.system_tab, text="Resumo do Sistema")
 
-        self.filesystem_tab = tk.Frame(self.notebook)
-        self.notebook.add(self.filesystem_tab, text="Sistema de Arquivos")
+        self.navegation_tab = tk.Frame(self.notebook)
+        self.notebook.add(self.navegation_tab, text="Navegação de Diretórios")
 
         # Cria os rótulos de resumo do sistema.
         self.create_system_summary()
 
         # Criar a aba do sistema de arquivos
-        self.create_filesystem_tab()
+        self.create_navegation_tab()
 
     def create_system_summary(self):
         # Frame de informações do sistema
@@ -197,9 +197,9 @@ class DashboardView:
             self.controller.show_process_details(pid)
 
 
-    def create_filesystem_tab(self):
+    def create_navegation_tab(self):
         # Barra de navegação
-        navigation_frame = tk.Frame(self.filesystem_tab)
+        navigation_frame = tk.Frame(self.navegation_tab)
         navigation_frame.pack(fill=tk.X)
 
         self.path_label = tk.Label(navigation_frame, text="Pasta Atual:", font=("Arial", 12))
@@ -212,7 +212,7 @@ class DashboardView:
         tk.Button(navigation_frame, text="Ir", command=lambda: self.controller.open_path(self.path_entry.get())).pack(side=tk.LEFT, padx=5)
 
         # Lista de arquivos e diretórios
-        self.files_table = ttk.Treeview(self.filesystem_tab, columns=("Nome", "Tamanho", "Tipo","Permissões", "Modificação", "Sistema de Arquivos", "Tamanho Total", "Usado", "Livre", "% Usado"),
+        self.files_table = ttk.Treeview(self.navegation_tab, columns=("Nome", "Tamanho", "Tipo","Permissões", "Modificação"),
         show="headings")
         self.files_table.heading("Nome", text="Nome")
         self.files_table.column("Nome", anchor=tk.W, width=300)
@@ -220,25 +220,15 @@ class DashboardView:
         self.files_table.column("Tamanho", anchor=tk.E, width=100)
         self.files_table.heading("Tipo", text="Tipo")
         self.files_table.column("Tipo", anchor=tk.CENTER, width=100)
-        self.files_table.heading("Permissões", text="Permissões")  # Nova coluna
-        self.files_table.column("Permissões", anchor=tk.CENTER, width=150)  # Configuração da largura
+        self.files_table.heading("Permissões", text="Permissões")  
+        self.files_table.column("Permissões", anchor=tk.CENTER, width=150)  
         self.files_table.heading("Modificação", text="Modificação")
         self.files_table.column("Modificação", anchor=tk.W, width=200)
-        self.files_table.heading("Sistema de Arquivos", text="Sistema de Arquivos")
-        self.files_table.column("Sistema de Arquivos", anchor=tk.W, width=150)
-        self.files_table.heading("Tamanho Total", text="Tamanho Total (MB)")
-        self.files_table.column("Tamanho Total", anchor=tk.E, width=150)
-        self.files_table.heading("Usado", text="Usado (MB)")
-        self.files_table.column("Usado", anchor=tk.E, width=100)
-        self.files_table.heading("Livre", text="Livre (MB)")
-        self.files_table.column("Livre", anchor=tk.E, width=100)
-        self.files_table.heading("% Usado", text="% Usado")
-        self.files_table.column("% Usado", anchor=tk.E, width=100)
         self.files_table.pack(fill=tk.BOTH, expand=True)
 
         self.files_table.bind("<Double-1>", self.on_file_double_click)
 
-    def update_filesystem_view(self, path, files):
+    def update_navegation_view(self, path, files):
         self.path_entry.delete(0, tk.END)
         self.path_entry.insert(0, path)
 
@@ -246,18 +236,38 @@ class DashboardView:
             self.files_table.delete(row)
 
         for file in files:
-            self.files_table.insert("", "end", values=(
+            tree_id= self.files_table.insert("", "end", values=(
                 file["name"],
                 file["size"],
                 file["type"],
                 file["permissions"],
                 file["last_modified"],
-                file.get("fstype", "-"),
-                file.get("total_size", "-"),
-                file.get("used_size", "-"),
-                file.get("free_size", "-"),
-                file.get("percent_used", "-")
             ))
+            file["tree_id"] = tree_id
+
+    def update_tree_item(self, tree_id, column, value):
+        """Atualiza um valor específico de um item no Treeview."""
+        current_values = list(self.files_table.item(tree_id, "values"))
+        
+        # Mapeia colunas para índices (ajuste se necessário)
+        column_map = {
+            "name": 0,
+            "size": 1,
+            "type": 2,
+            "permissions": 3,
+            "last_modified": 4,
+            "fstype": 5,
+            "total_size": 6,
+            "used_size": 7,
+            "free_size": 8,
+            "percent_used": 9,
+        }
+
+        # Atualiza o valor no índice correspondente
+        column_index = column_map.get(column)
+        if column_index is not None:
+            current_values[column_index] = value
+            self.files_table.item(tree_id, values=current_values)
 
     def on_file_double_click(self, event):
         selected_item = self.files_table.selection()

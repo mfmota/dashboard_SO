@@ -5,7 +5,6 @@ import stat
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
 
-
 class DashboardController:
     def __init__(self):
         self.system_info = SystemInfo()  # Inicializa a classe para obter informações do sistema.
@@ -114,20 +113,33 @@ class DashboardController:
 
         # Atualiza a tabela com os processos ordenados.
         self.view.update_process_list(sorted_processes)
+
+    """def get_filesystem_info(self):
+        ##Obtem as informações das partições
+        try:
+            filesystem_info = self.system_info.get_filesystem_info()  
+            self.view.update_filesystem_info(filesystem_info)         
+        except Exception as e:
+            print(f"Erro ao atualizar informações do sistema de arquivos: {e}")"""
     
     def navigate_to_directory(self, directory):
-        """Atualiza a visualização com o conteúdo do diretório especificado."""
+        ##Atualiza o conteúdo da tabela de acordo com o diretório
+        self.system_info.stop_directory_size_update()
+
         def update_view():
-            print(f"Navegando para: {directory}")
             if os.path.isdir(directory):
                 try:
-                    print(f"Listando arquivos em {directory}...")
                     items = os.listdir(directory)
-                    print(f"Arquivos encontrados: {items}")
                     file_info = self.system_info.list_directory(directory)
-                    print("Atualizando a visualização...")
-                    self.view.update_filesystem_view(directory, file_info)
-                    print("Visualização atualizada com sucesso.")
+                    self.view.update_navegation_view(directory, file_info)
+
+                    for entry in file_info:
+                        if entry["type"] == "directory":
+                            threading.Thread(
+                                target=self.system_info.update_directory_size,
+                                args=(os.path.join(directory, entry["name"]), file_info, self.on_directory_size_updated) 
+                            ).start()
+                    
                 except PermissionError:
                     self.view.show_error_message("Permissão negada ao acessar este diretório.")
                 except Exception as e:
@@ -140,8 +152,14 @@ class DashboardController:
         threading.Thread(target=update_view).start()
 
 
+    def on_directory_size_updated(self, entry):
+        # Chama o método da view para atualizar o item específico
+        if "tree_id" in entry:
+            self.view.update_tree_item(entry["tree_id"], "size", entry["size"])
+
     def open_path(self, path):
-        """Navega para o caminho especificado."""
+        ##Abre o caminho especificado
+        ##self.system_info.stop_directory_size_update()
         if os.path.isdir(path):
             self.navigate_to_directory(path)
         else:
@@ -149,35 +167,15 @@ class DashboardController:
 
 
     def open_file_or_directory(self,item_name):
-        """Abre um arquivo ou navega para o diretório clicado."""
+        ##Abre o arquivo clicado duas vezes
+        ##self.system_info.stop_directory_size_update()
         current_path = self.view.path_entry.get()
         full_path = os.path.join(current_path, item_name)
         if os.path.isdir(full_path):
             self.navigate_to_directory(full_path)
-        else:
-            # Aqui você pode implementar ações adicionais, como abrir arquivos com um programa específico.
-            self.view.show_error_message(f"Abrir arquivos ainda não está implementado para: {full_path}")
 
     def go_up_directory(self, current_path):
-        """Navega para o diretório pai."""
-        
+        ##Navega para o diretório pai
+        ##self.system_info.stop_directory_size_update()
         parent_directory = os.path.dirname(current_path)
-        print(f"Diretório atual: {current_path}, Diretório pai: {parent_directory}")
-        self.navigate_to_directory(parent_directory)
-
-    def start_periodic_update(self, interval=3000):
-        """Inicia a atualização periódica da view a cada 'interval' milissegundos."""
-        current_path = self.view.path_entry.get()
-        
-        if os.path.isdir(current_path):
-            def update_view():
-                print(f"Atualizando a view para o caminho: {current_path}")
-                file_info = self.system_info.list_directory(current_path)
-                self.view.update_filesystem_view(current_path, file_info)
-                # Reagendar a atualização
-                self.view.filesystem_tab.after(interval, update_view)
-            
-            # Primeira execução
-            self.view.filesystem_tab.after(interval, update_view)
-        else:
-            print(f"Caminho inválido para atualização periódica: {current_path}")
+        self.navigate_to_directory(parent_directory)  

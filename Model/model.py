@@ -7,6 +7,7 @@ import threading
 
 class SystemInfo:
     def __init__(self):
+        self.stop_directory_size_thread = False
         self.cpu_usage = 0.0
         self.memory_usage = 0.0
         self.prev_total_time = 0
@@ -128,7 +129,7 @@ class SystemInfo:
             return []
 
     def list_directory(self, path):
-        print(f"Diretorio {path}")
+        ##Lista arquivos e informações dos diretórios 
         try:
             entries = []
             for entry in os.listdir(path):
@@ -139,7 +140,7 @@ class SystemInfo:
                         entry_type = "directory"
                         size = 0
                         threading.Thread(
-                        target=self.update_directory_size, args=(entry_path, entries)
+                        target=self.update_directory_size, args=(entry_path, entries,None)
                     ).start()
                     else:
                         entry_type = "file"
@@ -150,35 +151,44 @@ class SystemInfo:
                         "size": size, 
                         "permissions": self._get_permissions(stats.st_mode),
                         "last_modified": datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                        "tree_id": None
                     })
                 except Exception as e:
                     print(f"Error reading {entry_path}: {e}")
-            print(f"Arquivo:{entry_path}, Tamanho : {stats.st_size}")
             return entries
         except Exception as e:
             print(f"Error listing directory {path}: {e}")
             return []
 
     def _get_permissions(self, mode):
+        ##Permissões do arquivo
         return stat.filemode(mode)
     
     def get_directory_size(self, directory): 
-        print(f"size")
+        ##Pega o tamanho do arquivo com o comando du do linux
         try:
             output = subprocess.check_output(['du', '-sb', directory], stderr=subprocess.DEVNULL)
             return int(output.split()[0])
         except Exception as e:
-            print(f"Erro ao usar 'du' para {directory}: {e}")
+            print(f"Não foi possível usar o comando du")
             return 0
             
-    def update_directory_size(self, directory, entries):
-        """Atualiza o tamanho do diretório em segundo plano."""
-        size = self.get_directory_size(directory)
-        for entry in entries:
-            if entry["name"] == os.path.basename(directory):
-                entry["size"] = size
-                print(f"Tamanho atualizado para {directory}: {size}")
-                break
+    def update_directory_size(self, directory, entries,callback):
+        ##Atualiza o tamanho em um thread separada
+        while not self.stop_directory_size_thread: 
+            size = self.get_directory_size(directory)
+            
+            for entry in entries:
+                if entry["name"] == os.path.basename(directory):
+                    entry["size"] = size
+                    if callback:
+                        callback(entry)
+                    break
+    def stop_directory_size_update(self):
+        """
+        Para a thread de atualização do tamanho do diretório.
+        """
+        self.stop_directory_size_thread = True
 
 #informações específicas sobre um projeto 
 class ProcessInfo:

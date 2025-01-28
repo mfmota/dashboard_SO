@@ -170,7 +170,6 @@ class SystemInfo:
     
     def get_directory_size(self, directory): 
         ##Pega o tamanho do arquivo com o comando du do linux
-        print (f"calculando {directory}")
         try:
             output = subprocess.check_output(['du', '-sb', directory], stderr=subprocess.DEVNULL)
             return int(output.split()[0])
@@ -187,8 +186,7 @@ class SystemInfo:
     def update_directory_size(self, directory, entries,callback):
         ##Atualiza o tamanho em um thread separada
 
-        if directory in self.processed_directories:
-            # Ignora se o diretório já foi processado
+        if self.stop_directory_size_thread.is_set() or directory in self.processed_directories:
             return
 
         self.processed_directories.add(directory)
@@ -203,7 +201,6 @@ class SystemInfo:
                     break
 
         except Exception as e:
-            # Captura erros durante a atualização de entradas individuais
             print(f"Erro ao atualizar entrada {entry['name']}: {e}")
             
     def stop_directory_size_update(self):

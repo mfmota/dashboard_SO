@@ -134,23 +134,22 @@ class DashboardController:
                     file_info = self.system_info.list_directory(directory)
                     self.view.update_navegation_view(directory, file_info)
 
-                    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:    
-                        for entry in file_info:
-                            if entry["type"] == "directory":
-                                executor.submit(
-                                    self.system_info.update_directory_size,
-                                    os.path.join(directory, entry["name"]), 
-                                    file_info, 
-                                    self.on_directory_size_updated 
-                                )
+                    for entry in file_info:
+                        if entry["type"] == "directory":
+                            threading.Thread(
+                                target=self.system_info.update_directory_size,
+                                args=(os.path.join(directory, entry["name"]), file_info, self.on_directory_size_updated) 
+                            ).start()
+
                 except PermissionError:
                     self.view.show_error_message("Permissão negada ao acessar este diretório.")
+
                 except Exception as e:
                     print(f"Erro ao navegar para {directory}: {e}")
             else:
                 print(f"Caminho inválido: {directory}")
                 self.view.show_error_message("Caminho inválido ou não é um diretório.")
-        
+                
         # Executa a atualização em uma thread separada
         threading.Thread(target=update_view).start()
 
@@ -167,8 +166,6 @@ class DashboardController:
             self.navigate_to_directory(path)
         else:
             self.view.show_error_message("Caminho inválido ou não é um diretório.")
-
-
     def open_file_or_directory(self,item_name):
         ##Abre o arquivo clicado duas vezes
         self.system_info.stop_directory_size_update()

@@ -4,10 +4,12 @@ import stat
 import subprocess
 from datetime import datetime
 import threading
+import time
 
 class SystemInfo:
     def __init__(self):
-        self.stop_directory_size_thread = False
+        self.stop_directory_size_thread = threading.Event()
+        self.processed_directories = set()
         self.cpu_usage = 0.0
         self.memory_usage = 0.0
         self.prev_total_time = 0
@@ -82,13 +84,17 @@ class SystemInfo:
             # Percorre todos os PIDs no diretório /proc
             for pid in os.listdir("/proc"):
                 if pid.isdigit():  # Verifica se o nome do diretório é um PID válido
-                    process_count += 1
-                    with open(f"/proc/{pid}/status", "r") as f:
-                        lines = f.readlines()
-                    for line in lines:
-                        if line.startswith("Threads:"): # Encontra a contagem de threads para o processo
-                            thread_count += int(line.split()[1])
-                            break
+                    try:    
+                        process_count += 1
+                        with open(f"/proc/{pid}/status", "r") as f:
+                            lines = f.readlines()
+                        for line in lines:
+                            if line.startswith("Threads:"): # Encontra a contagem de threads para o processo
+                                thread_count += int(line.split()[1])
+                                break
+                    except FileNotFoundError:
+                        # O processo pode ter sido encerrado antes de lermos
+                        continue
 
             return process_count, thread_count
         except Exception as e:
@@ -139,19 +145,17 @@ class SystemInfo:
                     if os.path.isdir(entry_path):
                         entry_type = "directory"
                         size = 0
-                        threading.Thread(
-                        target=self.update_directory_size, args=(entry_path, entries,None)
-                    ).start()
                     else:
                         entry_type = "file"
                         size = os.path.getsize(entry_path) 
+
                     entries.append({
                         "name": entry,
                         "type": entry_type,
                         "size": size, 
                         "permissions": self._get_permissions(stats.st_mode),
                         "last_modified": datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
-                        "tree_id": None
+                        "tree_id": entry_path
                     })
                 except Exception as e:
                     print(f"Error reading {entry_path}: {e}")
@@ -166,29 +170,49 @@ class SystemInfo:
     
     def get_directory_size(self, directory): 
         ##Pega o tamanho do arquivo com o comando du do linux
+        print (f"calculando {directory}")
         try:
             output = subprocess.check_output(['du', '-sb', directory], stderr=subprocess.DEVNULL)
             return int(output.split()[0])
+        except subprocess.CalledProcessError:
+            print(f"Erro ao acessar {directory} com 'du'. Ignorando.")
+            return 0
+        except FileNotFoundError:
+            print("O comando 'du' não está disponível no sistema.")
+            return 0
         except Exception as e:
-            print(f"Não foi possível usar o comando du")
+            print(f"Erro inesperado ao calcular tamanho de {directory}: {e}")
             return 0
             
     def update_directory_size(self, directory, entries,callback):
         ##Atualiza o tamanho em um thread separada
-        while not self.stop_directory_size_thread: 
+
+        if directory in self.processed_directories:
+            # Ignora se o diretório já foi processado
+            return
+
+        self.processed_directories.add(directory)
+
+        try: 
             size = self.get_directory_size(directory)
-            
             for entry in entries:
                 if entry["name"] == os.path.basename(directory):
                     entry["size"] = size
                     if callback:
                         callback(entry)
                     break
+
+        except Exception as e:
+            # Captura erros durante a atualização de entradas individuais
+            print(f"Erro ao atualizar entrada {entry['name']}: {e}")
+            
     def stop_directory_size_update(self):
-        """
-        Para a thread de atualização do tamanho do diretório.
-        """
-        self.stop_directory_size_thread = True
+        self.stop_directory_size_thread.set()
+
+    def start_directory_size_update(self):
+        self.stop_directory_size_thread.clear()
+        self.processed_directories.clear()
+
 
 #informações específicas sobre um projeto 
 class ProcessInfo:

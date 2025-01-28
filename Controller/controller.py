@@ -1,6 +1,7 @@
 import threading
 import time
 import os
+from concurrent.futures import ThreadPoolExecutor
 import stat
 from Model.model import SystemInfo, list_all_processes, ProcessInfo
 from View.view import DashboardView, ProcessDetailView
@@ -54,7 +55,7 @@ class DashboardController:
             self.view.update_process_list(processes)
 
 
-            time.sleep(5)  # Aguarda 5 segundos antes de atualizar novamente.
+            time.sleep(3)  # Aguarda 5 segundos antes de atualizar novamente.
 
 
     def show_process_details(self, pid):
@@ -124,7 +125,7 @@ class DashboardController:
     
     def navigate_to_directory(self, directory):
         ##Atualiza o conteúdo da tabela de acordo com o diretório
-        self.system_info.stop_directory_size_update()
+        self.system_info.start_directory_size_update()
 
         def update_view():
             if os.path.isdir(directory):
@@ -133,13 +134,15 @@ class DashboardController:
                     file_info = self.system_info.list_directory(directory)
                     self.view.update_navegation_view(directory, file_info)
 
-                    for entry in file_info:
-                        if entry["type"] == "directory":
-                            threading.Thread(
-                                target=self.system_info.update_directory_size,
-                                args=(os.path.join(directory, entry["name"]), file_info, self.on_directory_size_updated) 
-                            ).start()
-                    
+                    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:    
+                        for entry in file_info:
+                            if entry["type"] == "directory":
+                                executor.submit(
+                                    self.system_info.update_directory_size,
+                                    os.path.join(directory, entry["name"]), 
+                                    file_info, 
+                                    self.on_directory_size_updated 
+                                )
                 except PermissionError:
                     self.view.show_error_message("Permissão negada ao acessar este diretório.")
                 except Exception as e:
@@ -159,7 +162,7 @@ class DashboardController:
 
     def open_path(self, path):
         ##Abre o caminho especificado
-        ##self.system_info.stop_directory_size_update()
+        self.system_info.stop_directory_size_update()
         if os.path.isdir(path):
             self.navigate_to_directory(path)
         else:
@@ -168,7 +171,7 @@ class DashboardController:
 
     def open_file_or_directory(self,item_name):
         ##Abre o arquivo clicado duas vezes
-        ##self.system_info.stop_directory_size_update()
+        self.system_info.stop_directory_size_update()
         current_path = self.view.path_entry.get()
         full_path = os.path.join(current_path, item_name)
         if os.path.isdir(full_path):
@@ -176,6 +179,6 @@ class DashboardController:
 
     def go_up_directory(self, current_path):
         ##Navega para o diretório pai
-        ##self.system_info.stop_directory_size_update()
+        self.system_info.stop_directory_size_update()
         parent_directory = os.path.dirname(current_path)
         self.navigate_to_directory(parent_directory)  

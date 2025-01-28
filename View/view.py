@@ -21,11 +21,16 @@ class DashboardView:
         self.navegation_tab = tk.Frame(self.notebook)
         self.notebook.add(self.navegation_tab, text="Navegação de Diretórios")
 
+        self.filesystem_tab = tk.Frame(self.notebook)
+        self.notebook.add(self.filesystem_tab, text="Sistema de arquivos")
+
         # Cria os rótulos de resumo do sistema.
         self.create_system_summary()
 
         # Criar a aba do sistema de arquivos
         self.create_navegation_tab()
+
+        self.create_filesystem_tab()
 
     def create_system_summary(self):
         # Frame de informações do sistema
@@ -276,6 +281,40 @@ class DashboardView:
         file_name = self.files_table.item(selected_item[0], "values")[0]
         self.controller.open_file_or_directory(file_name)
 
+    def create_filesystem_tab(self):
+        """Cria a aba do sistema de arquivos na interface gráfica."""
+        self.filesystem_frame = ttk.Frame(self.filesystem_tab)
+        self.filesystem_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Criando a tabela para exibir informações do sistema de arquivos
+        columns = ("Device", "Mountpoint", "FSType", "Total (MB)", "Used (MB)", "Free (MB)", "Usage (%)")
+
+        self.filesystem_tree = ttk.Treeview(self.filesystem_frame, columns=columns, show="headings", height=10)
+        
+        # Configuração das colunas
+        for col in columns:
+            self.filesystem_tree.heading(col, text=col)
+            self.filesystem_tree.column(col, anchor="center", width=100)
+
+        self.filesystem_tree.pack(fill="both", expand=True)
+
+    def update_filesystem_info(self, filesystem_info):
+        """Atualiza a tabela com as informações do sistema de arquivos."""
+        # Limpando dados antigos
+        for row in self.filesystem_tree.get_children():
+            self.filesystem_tree.delete(row)
+
+        # Inserindo novas informações
+        for partition in filesystem_info:
+            self.filesystem_tree.insert("", "end", values=(
+                partition["device"],
+                partition["mountpoint"],
+                partition["fstype"],
+                partition["total_size"],
+                partition["used_size"],
+                partition["free_size"],
+                partition["percent_used"]
+            ))
     def run(self):
         self.root.mainloop()
 

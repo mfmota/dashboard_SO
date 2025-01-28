@@ -13,6 +13,7 @@ class DashboardController:
         self.running = False  # Indica se o loop de atualização está ativo.
 
         self.navigate_to_directory(os.getcwd())
+        self.get_filesystem_info()
 
     def start(self):
         self.running = True  
@@ -53,7 +54,6 @@ class DashboardController:
             # Lista todos os processos ativos e atualiza a interface com a lista de processos.
             processes = list_all_processes()
             self.view.update_process_list(processes)
-
 
             time.sleep(3)  # Aguarda 5 segundos antes de atualizar novamente.
 
@@ -115,13 +115,13 @@ class DashboardController:
         # Atualiza a tabela com os processos ordenados.
         self.view.update_process_list(sorted_processes)
 
-    """def get_filesystem_info(self):
+    def get_filesystem_info(self):
         ##Obtem as informações das partições
         try:
             filesystem_info = self.system_info.get_filesystem_info()  
             self.view.update_filesystem_info(filesystem_info)         
         except Exception as e:
-            print(f"Erro ao atualizar informações do sistema de arquivos: {e}")"""
+            print(f"Erro ao atualizar informações do sistema de arquivos: {e}")
     
     def navigate_to_directory(self, directory):
         ##Atualiza o conteúdo da tabela de acordo com o diretório

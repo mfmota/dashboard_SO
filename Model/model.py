@@ -112,7 +112,7 @@ class SystemInfo:
                     fstype = parts[2]
 
 
-                    if parts[0].startswith("/dev") or (device.endswith(":") and mountpoint.startswith("/mnt/")):  
+                    if True:  
                         # Obtém estatísticas do sistema de arquivos
                         stats = os.statvfs(mountpoint)
                         total_size = (stats.f_blocks * stats.f_frsize) // (1024 * 1024)  # Em MB

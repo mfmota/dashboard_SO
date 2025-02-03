@@ -338,7 +338,7 @@ class ProcessDetailView:
 
         if details:
             for key, value in details.items():
-                if key not in ("Threads", "Memory Details"):
+                if key not in ("Threads", "Memory Details", "Arquivos Abertos","Estatísticas de E/S"):
                     label = tk.Label(basic_tab, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
                     label.pack(fill=tk.X, padx=5, pady=2)
 

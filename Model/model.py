@@ -183,9 +183,9 @@ class SystemInfo:
         except Exception as e:
             print(f"Erro inesperado ao calcular tamanho de {directory}: {e}")
             return 0
-            
+
+    #Atualiza o tamanho em um thread separada
     def update_directory_size(self, directory, entries,callback):
-        ##Atualiza o tamanho em um thread separada
 
         if self.stop_directory_size_thread.is_set() or directory in self.processed_directories:
             return
@@ -206,10 +206,12 @@ class SystemInfo:
 
         except Exception as e:
             print(f"Erro ao atualizar entrada {entry['name']}: {e}")
-            
+
+    #Para a thread caso mude o diretório selecionado   
     def stop_directory_size_update(self):
         self.stop_directory_size_thread.set()
 
+    #Começa a thread para calculo do tamanho
     def start_directory_size_update(self):
         self.stop_directory_size_thread.clear()
         self.processed_directories.clear()
@@ -329,7 +331,8 @@ class ProcessInfo:
             return round(system_uptime - start_time, 2)
         except Exception:
             return 0.0
-    
+
+    #Acesssa os recursos abertos/alocados pelo processo
     def get_open_files(self):
         open_files = []
         fd_path = f"/proc/{self.pid}/fd/"
@@ -348,6 +351,7 @@ class ProcessInfo:
             print(f"Erro ao obter arquivos abertos para PID {self.pid}: {e}")
         return open_files
     
+    #Acessa as informações de entrada e saída do processo com /proc
     def get_io_stats(self):
         io_stats = {}
         io_path = f"/proc/{self.pid}/io"

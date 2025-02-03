@@ -391,7 +391,7 @@ class ProcessDetailView:
             else:
                 open_files_listbox.insert(tk.END, "Nenhum arquivo aberto.")
 
-            # 🔹 Aba de Estatísticas de E/S
+            # Aba de Estatísticas de E/S
             io_stats_tab = tk.Frame(notebook)
             notebook.add(io_stats_tab, text="Estatísticas de E/S")
 

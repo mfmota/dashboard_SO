@@ -154,6 +154,7 @@ class DashboardController:
                     self.view.update_navegation_view(directory, file_info)
 
                     for entry in file_info:
+                        #Cria uma thread para cada diretório responsável por calcular o tamanho
                         if entry["type"] == "directory":
                             threading.Thread(
                                 target=self.system_info.update_directory_size,
@@ -174,7 +175,7 @@ class DashboardController:
 
 
     def on_directory_size_updated(self, entry):
-        # Chama o método da view para atualizar o item específico
+        # Chama o método da view para atualizar o item específico após o cálculo do tamanho
         if "tree_id" in entry:
             self.view.update_tree_item(entry["tree_id"], "size", entry["size"])
 
@@ -185,6 +186,7 @@ class DashboardController:
             self.navigate_to_directory(path)
         else:
             self.view.show_error_message("Caminho inválido ou não é um diretório.")
+            
     def open_file_or_directory(self,item_name):
         ##Abre o arquivo clicado duas vezes
         self.system_info.stop_directory_size_update()

@@ -356,6 +356,7 @@ class ProcessDetailView:
                     label = tk.Label(memory_tab, text="Sem informações de memória disponíveis", font=("Arial", 12), anchor="w")
                     label.pack(fill=tk.X, padx=5, pady=2)
 
+            #Aba Threads
             threads_tab = tk.Frame(notebook)
             notebook.add(threads_tab, text="Threads")
 
@@ -375,6 +376,32 @@ class ProcessDetailView:
                     "X": "Terminou",
                 }.get(thread["state"], "Desconhecido")
                 threads_table.insert("", "end", values=(thread["tid"], state_description, thread["cpu_time"]))
+
+        # Aba de Arquivos Abertos
+            open_files_tab = tk.Frame(notebook)
+            notebook.add(open_files_tab, text="Arquivos Abertos")
+
+            open_files_listbox = tk.Listbox(open_files_tab, font=("Arial", 12))
+            open_files_listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+            open_files = details.get("Arquivos Abertos", [])
+            if open_files:
+                for file in open_files:
+                    open_files_listbox.insert(tk.END, file)
+            else:
+                open_files_listbox.insert(tk.END, "Nenhum arquivo aberto.")
+
+            # 🔹 Aba de Estatísticas de E/S
+            io_stats_tab = tk.Frame(notebook)
+            notebook.add(io_stats_tab, text="Estatísticas de E/S")
+
+            if "Estatísticas de E/S" in details:
+                for key, value in details["Estatísticas de E/S"].items():
+                    label = tk.Label(io_stats_tab, text=f"{key}: {value}", font=("Arial", 12), anchor="w")
+                    label.pack(fill=tk.X, padx=5, pady=2)
+            else:
+                label = tk.Label(io_stats_tab, text="Sem informações de E/S disponíveis.", font=("Arial", 12), anchor="w")
+                label.pack(fill=tk.X, padx=5, pady=2)
 
     def show(self):
         self.window.mainloop()

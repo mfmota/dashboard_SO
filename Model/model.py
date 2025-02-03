@@ -325,6 +325,36 @@ class ProcessInfo:
             return round(system_uptime - start_time, 2)
         except Exception:
             return 0.0
+    
+    def get_open_files(self):
+        open_files = []
+        fd_path = f"/proc/{self.pid}/fd/"
+        try:
+            if os.path.exists(fd_path):
+                for fd in os.listdir(fd_path):
+                    try:
+                        file_path = os.readlink(os.path.join(fd_path, fd))
+                        open_files.append({
+                            "fd": fd,
+                            "file_path": file_path
+                        })
+                    except OSError:
+                        continue
+        except Exception as e:
+            print(f"Erro ao obter arquivos abertos para PID {self.pid}: {e}")
+        return open_files
+    
+    def get_io_stats(self):
+        io_stats = {}
+        io_path = f"/proc/{self.pid}/io"
+        try:
+            with open(io_path, "r") as f:
+                for line in f:
+                    key, value = line.strip().split(":")
+                    io_stats[key.strip()] = int(value.strip())
+        except Exception as e:
+            print(f"Erro ao obter estatísticas de E/S para PID {self.pid}: {e}")
+        return io_stats
 
     def to_dict(self):
         return {
@@ -333,10 +363,12 @@ class ProcessInfo:
             "user": self.user,
             "state": self.state,
             "memory": f"{self.memory} KB",
-             "memory_details": self.memory_details,
+            "memory_details": self.memory_details,
             "threads": self.threads,
             "command": self.command,
-            "uptime": self.get_uptime()
+            "uptime": self.get_uptime(),
+            "open_files": self.get_open_files(), 
+            "io_stats": self.get_io_stats()
         }
 
 # Lista todos os processos disponíveis no sistema

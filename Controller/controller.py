@@ -70,6 +70,22 @@ class DashboardController:
 
         # Obtém detalhes de memória do processo.
         memory_info = process_info.get_memory_details(pid)
+
+        # Obtém arquivos abertos pelo processo.
+        open_files = process_info.get_open_files()
+
+        # Obtém estatísticas de entrada/saída do processo.
+        io_stats = process_info.get_io_stats()
+
+        formatted_io_stats = {
+            "Bytes lidos": io_stats["read_bytes"],
+            "Bytes gravados": io_stats["write_bytes"],
+            "Total de caracteres lidos": io_stats["rchar"],
+            "Total de caracteres gravados": io_stats["wchar"],
+            "Chamadas de leitura": io_stats["syscr"],
+            "Chamadas de escrita": io_stats["syscw"],
+            "Bytes cancelados na escrita": io_stats["cancelled_write_bytes"],
+        }
        
         details = {
             "PID": pid,
@@ -80,6 +96,8 @@ class DashboardController:
             "Memory Details": memory_info,
             "Tempo de Atividade (s)": process_info.get_uptime(),
             "Threads": threads_info,
+            "Arquivos Abertos": open_files,
+            "Estatísticas de E/S": formatted_io_stats,
         }
        
         ProcessDetailView(self.view.root, details)

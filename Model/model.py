@@ -10,6 +10,7 @@ class SystemInfo:
     def __init__(self):
         self.stop_directory_size_thread = threading.Event()
         self.processed_directories = set()
+        self.dir_lock = threading.Lock()
         self.cpu_usage = 0.0
         self.memory_usage = 0.0
         self.prev_total_time = 0
@@ -189,7 +190,10 @@ class SystemInfo:
         if self.stop_directory_size_thread.is_set() or directory in self.processed_directories:
             return
 
-        self.processed_directories.add(directory)
+        with self.dir_lock:
+            if directory in self.processed_directories:
+                return
+            self.processed_directories.add(directory)
 
         try: 
             size = self.get_directory_size(directory)
@@ -373,15 +377,17 @@ class ProcessInfo:
 
 # Lista todos os processos disponíveis no sistema
 def list_all_processes():
+    process_lock = threading.Lock()
     processes = []
-    for pid in os.listdir("/proc"):
-        if pid.isdigit(): # Filtra apenas diretórios que são números (PIDs)
-            process = ProcessInfo(pid)
-            process.get_process_details()
-            thread_info = process.get_thread_info()
-            if process.name:
-                processes.append({
-                    **process.to_dict(),
-                    "threads_info": thread_info
-                })
+    with process_lock:
+        for pid in os.listdir("/proc"):
+            if pid.isdigit(): # Filtra apenas diretórios que são números (PIDs)
+                process = ProcessInfo(pid)
+                process.get_process_details()
+                thread_info = process.get_thread_info()
+                if process.name:
+                    processes.append({
+                        **process.to_dict(),
+                        "threads_info": thread_info
+                    })
     return processes

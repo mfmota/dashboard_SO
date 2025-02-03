@@ -11,7 +11,7 @@ class DashboardController:
         self.system_info = SystemInfo()  # Inicializa a classe para obter informações do sistema.
         self.view = DashboardView(self)  # Cria a interface do dashboard associada ao controlador.
         self.running = False  # Indica se o loop de atualização está ativo.
-
+        self.update_lock = threading.Lock()
         self.navigate_to_directory(os.getcwd())
         self.get_filesystem_info()
 
@@ -30,30 +30,31 @@ class DashboardController:
 
     def update_data(self):
         while self.running:  
-            # Obtém as informações de uso da CPU e porcentagem de tempo ocioso.
-            cpu_usage, idle_percentage = self.system_info.get_cpu_usage()
-           
-            # Obtém informações sobre a memória do sistema.
-            memory_info = self.system_info.get_memory_info()
+            with self.update_lock:
+                # Obtém as informações de uso da CPU e porcentagem de tempo ocioso.
+                cpu_usage, idle_percentage = self.system_info.get_cpu_usage()
+            
+                # Obtém informações sobre a memória do sistema.
+                memory_info = self.system_info.get_memory_info()
 
 
-            # Obtém o número total de processos e threads no sistema.
-            total_processes, total_threads = self.system_info.get_total_processes_and_threads()
+                # Obtém o número total de processos e threads no sistema.
+                total_processes, total_threads = self.system_info.get_total_processes_and_threads()
 
 
-            # Atualiza a interface com as informações do sistema.
-            self.view.update_system_info(
-            cpu_usage=cpu_usage,
-            idle_percentage=idle_percentage,
-            memory_info=memory_info,
-            total_processes=total_processes,
-            total_threads=total_threads
-        )
+                # Atualiza a interface com as informações do sistema.
+                self.view.update_system_info(
+                cpu_usage=cpu_usage,
+                idle_percentage=idle_percentage,
+                memory_info=memory_info,
+                total_processes=total_processes,
+                total_threads=total_threads
+            )
 
 
-            # Lista todos os processos ativos e atualiza a interface com a lista de processos.
-            processes = list_all_processes()
-            self.view.update_process_list(processes)
+                # Lista todos os processos ativos e atualiza a interface com a lista de processos.
+                processes = list_all_processes()
+                self.view.update_process_list(processes)
 
             time.sleep(3)  # Aguarda 5 segundos antes de atualizar novamente.
 
@@ -139,7 +140,7 @@ class DashboardController:
             filesystem_info = self.system_info.get_filesystem_info()  
             self.view.update_filesystem_info(filesystem_info)         
         except Exception as e:
-            print(f"Erro ao atualizar informações do sistema de arquivos: {e}")
+            print("")
     
     def navigate_to_directory(self, directory):
         ##Atualiza o conteúdo da tabela de acordo com o diretório
